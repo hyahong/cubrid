@@ -18997,7 +18997,17 @@ SCAN_CODE
 heap_next (THREAD_ENTRY * thread_p, const HFID * hfid, OID * class_oid, OID * next_oid, RECDES * recdes,
 	   HEAP_SCANCACHE * scan_cache, int ispeeking)
 {
-  return heap_next_internal (thread_p, hfid, class_oid, next_oid, recdes, scan_cache, ispeeking, false, NULL, NULL);
+	struct timespec ts_start, ts_end;
+	SCAN_CODE code;
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
+	code = heap_next_internal (thread_p, hfid, class_oid, next_oid, recdes, scan_cache, ispeeking, false, NULL, NULL);
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
+  return code;
 }
 
 /*
@@ -23033,6 +23043,7 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
   int rc = NO_ERROR;
   PERF_UTIME_TRACKER time_track;
   bool is_mvcc_class;
+	struct timespec ts_start, ts_end;
 
   LOG_TDES *tdes = NULL;
 
@@ -23042,6 +23053,8 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
   assert (context->recdes_p != NULL);
   assert (!HFID_IS_NULL (&context->hfid));
 
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
   context->time_track = &time_track;
   HEAP_PERF_START (thread_p, context);
 
@@ -23049,7 +23062,8 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
   if (heap_scancache_check_with_hfid (thread_p, &context->hfid, &context->class_oid, &context->scan_cache_p) !=
       NO_ERROR)
     {
-      return ER_FAILED;
+			rc = ER_FAILED;
+			goto error;
     }
 
   is_mvcc_class = !mvcc_is_mvcc_disabled_class (&context->class_oid);
@@ -23077,7 +23091,8 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
     {
       if (heap_insert_adjust_recdes_header (thread_p, context, is_mvcc_class) != NO_ERROR)
 	{
-	  return ER_FAILED;
+		rc = ER_FAILED;
+		goto error;
 	}
     }
 
@@ -23126,14 +23141,16 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
       /* make sure we have IX_LOCK on class see [NOTE-1] */
       if (lock_object (thread_p, &context->class_oid, oid_Root_class_oid, IX_LOCK, LK_UNCOND_LOCK) != LK_GRANTED)
 	{
-	  return ER_FAILED;
+		rc = ER_FAILED;
+		goto error;
 	}
     }
 
   /* get insert location (includes locking) */
   if (heap_get_insert_location_with_lock (thread_p, context, home_hint_p) != NO_ERROR)
     {
-      return ER_FAILED;
+			rc = ER_FAILED;
+			goto error;
     }
 
   HEAP_PERF_TRACK_PREPARE (thread_p, context);
@@ -23227,6 +23244,9 @@ error:
 #if defined(ENABLE_SYSTEMTAP)
   CUBRID_OBJ_INSERT_END (&context->class_oid, (rc < 0));
 #endif /* ENABLE_SYSTEMTAP */
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.insert += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
 
   /* all ok */
   return rc;

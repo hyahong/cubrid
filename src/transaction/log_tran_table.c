@@ -1591,7 +1591,23 @@ logtb_clear_tdes (THREAD_ENTRY * thread_p, LOG_TDES * tdes)
   LSA_SET_NULL (&tdes->rcv.sysop_start_postpone_lsa);
   LSA_SET_NULL (&tdes->rcv.atomic_sysop_start_lsa);
   LSA_SET_NULL (&tdes->rcv.analysis_last_aborted_sysop_lsa);
-  LSA_SET_NULL (&tdes->rcv.analysis_last_aborted_sysop_start_lsa);
+  LSA_SET_NULL (&tdes->rcv.analysis_last_aborted_sysop_start_lsa);	
+
+	if (!thread_p)
+		return ;
+	er_log_debug (ARG_FILE_LINE,
+			"transaction end (%d)\n" \
+			"insert: %lld ms\n" \
+			"select: %lld ms\n" \
+			"update: %lld ms\n" \
+			"delete: %lld ms\n" \
+			"sum   : %lld ms\n\n",
+			tdes->tran_index, thread_p->statistics.insert / 1000000, thread_p->statistics.select / 1000000, thread_p->statistics.update / 1000000, thread_p->statistics.del / 1000000, 
+			(thread_p->statistics.insert + thread_p->statistics.select + thread_p->statistics.update + thread_p->statistics.del) / 1000000);
+	thread_p->statistics.insert = 0;
+	thread_p->statistics.select = 0;
+	thread_p->statistics.update = 0;
+	thread_p->statistics.del = 0;
 }
 
 /*
