@@ -23269,6 +23269,10 @@ heap_delete_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   int rc = NO_ERROR;
   PERF_UTIME_TRACKER time_track;
 
+	struct timespec ts_start, ts_end;
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
   /*
    * Check input
    */
@@ -23283,6 +23287,9 @@ heap_delete_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   /* check input OID validity */
   if (heap_is_valid_oid (thread_p, &context->oid) != NO_ERROR)
     {
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return ER_FAILED;
     }
 
@@ -23290,6 +23297,9 @@ heap_delete_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   if (heap_scancache_check_with_hfid (thread_p, &context->hfid, &context->class_oid, &context->scan_cache_p) !=
       NO_ERROR)
     {
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return ER_FAILED;
     }
 
@@ -23302,10 +23312,17 @@ heap_delete_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
 	  ASSERT_ERROR_AND_SET (rc);
 	  if (rc == ER_INTERRUPTED)
 	    {
+				clock_gettime (CLOCK_MONOTONIC, &ts_end);
+				thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
 	      return rc;
 	    }
 	}
       er_set (ER_FATAL_ERROR_SEVERITY, ARG_FILE_LINE, ER_GENERIC_ERROR, 0);
+
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return ER_FAILED;
     }
 
@@ -23316,6 +23333,9 @@ heap_delete_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
     {
       if (heap_mark_class_as_modified (thread_p, &context->oid, NULL_CHN, true) != NO_ERROR)
 	{
+		clock_gettime (CLOCK_MONOTONIC, &ts_end);
+		thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
 	  return ER_FAILED;
 	}
     }
@@ -23444,6 +23464,9 @@ error:
   CUBRID_OBJ_DELETE_END (&context->class_oid, (rc != NO_ERROR));
 #endif /* ENABLE_SYSTEMTAP */
 
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.del += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
   return rc;
 }
 
@@ -23461,6 +23484,10 @@ heap_update_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   PERF_UTIME_TRACKER time_track;
   bool is_mvcc_class;
 
+	struct timespec ts_start, ts_end;
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
   /*
    * Check input
    */
@@ -23477,6 +23504,8 @@ heap_update_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   if (rc != NO_ERROR)
     {
       ASSERT_ERROR ();
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
       return rc;
     }
 
@@ -23489,10 +23518,16 @@ heap_update_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
 	  ASSERT_ERROR_AND_SET (rc);
 	  if (rc == ER_INTERRUPTED)
 	    {
+				clock_gettime (CLOCK_MONOTONIC, &ts_end);
+				thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
 	      return rc;
 	    }
 	}
       er_set (ER_FATAL_ERROR_SEVERITY, ARG_FILE_LINE, ER_GENERIC_ERROR, 0);
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return ER_GENERIC_ERROR;
     }
 
@@ -23508,6 +23543,10 @@ heap_update_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
 	  er_log_debug (ARG_FILE_LINE, "heap_update: Bad interface a heap is needed");
 	  er_set (ER_ERROR_SEVERITY, ARG_FILE_LINE, ER_HEAP_UNKNOWN_HEAP, 3, "", NULL_FILEID, NULL_PAGEID);
 	  assert (false);
+
+		clock_gettime (CLOCK_MONOTONIC, &ts_end);
+		thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
 	  return ER_HEAP_UNKNOWN_HEAP;
 	}
     }
@@ -23517,6 +23556,10 @@ heap_update_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context)
   if (rc != NO_ERROR)
     {
       ASSERT_ERROR ();
+
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return rc;
     }
 
@@ -23684,6 +23727,9 @@ exit:
 #if defined(ENABLE_SYSTEMTAP)
   CUBRID_OBJ_UPDATE_END (&context->class_oid, (rc != NO_ERROR));
 #endif /* ENABLE_SYSTEMTAP */
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.update += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
 
   return rc;
 }

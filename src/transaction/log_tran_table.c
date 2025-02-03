@@ -1595,15 +1595,33 @@ logtb_clear_tdes (THREAD_ENTRY * thread_p, LOG_TDES * tdes)
 
 	if (!thread_p)
 		return ;
+
+	UINT64 sum = thread_p->statistics.insert + thread_p->statistics.select + thread_p->statistics.update + thread_p->statistics.del;
 	er_log_debug (ARG_FILE_LINE,
 			"transaction end (%d)\n" \
-			"insert: %lld ms\n" \
-			"select: %lld ms\n" \
-			"update: %lld ms\n" \
-			"delete: %lld ms\n" \
-			"sum   : %lld ms\n\n",
-			tdes->tran_index, thread_p->statistics.insert / 1000000, thread_p->statistics.select / 1000000, thread_p->statistics.update / 1000000, thread_p->statistics.del / 1000000, 
-			(thread_p->statistics.insert + thread_p->statistics.select + thread_p->statistics.update + thread_p->statistics.del) / 1000000);
+			"insert: %llu.%llu ms\n" \
+			"select: %llu.%llu ms\n" \
+			"update: %llu.%llu ms\n" \
+			"delete: %llu.%llu ms\n" \
+			"sum   : %llu.%llu ms\n\n",
+
+			tdes->tran_index,
+
+			thread_p->statistics.insert / 1000000,
+			thread_p->statistics.insert % 1000000,
+
+			thread_p->statistics.select / 1000000,
+			thread_p->statistics.select % 1000000,
+
+			thread_p->statistics.update / 1000000,
+			thread_p->statistics.update % 1000000,
+
+			thread_p->statistics.del / 1000000, 
+			thread_p->statistics.del % 1000000, 
+
+			sum / 1000000,
+			sum % 1000000);
+
 	thread_p->statistics.insert = 0;
 	thread_p->statistics.select = 0;
 	thread_p->statistics.update = 0;
