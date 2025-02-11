@@ -2200,6 +2200,10 @@ static int
 scan_get_index_oidset (THREAD_ENTRY * thread_p, SCAN_ID * s_id, DB_BIGINT * key_limit_upper,
 		       DB_BIGINT * key_limit_lower)
 {
+	struct timespec ts_start, ts_end;
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
   INDX_SCAN_ID *iscan_id;
   FILTER_INFO key_filter;
   indx_info *indx_infop;
@@ -2238,6 +2242,9 @@ scan_get_index_oidset (THREAD_ENTRY * thread_p, SCAN_ID * s_id, DB_BIGINT * key_
 
   if (key_cnt < 1 || !key_vals || !key_ranges)
     {
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       er_set (ER_ERROR_SEVERITY, ARG_FILE_LINE, ER_QPROC_INVALID_XASLNODE, 0);
       return ER_FAILED;
     }
@@ -2342,6 +2349,9 @@ scan_get_index_oidset (THREAD_ENTRY * thread_p, SCAN_ID * s_id, DB_BIGINT * key_
   /* if the end of this scan */
   if (iscan_id->curr_keyno > key_cnt)
     {
+			clock_gettime (CLOCK_MONOTONIC, &ts_end);
+			thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
       return NO_ERROR;
     }
   else
@@ -2725,6 +2735,9 @@ end:
       s_id->scan_stats.qualified_keys += iscan_id->bt_scan.qualified_keys;
       iscan_id->bt_scan.qualified_keys = 0;
     }
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
 
   return ret;
 
@@ -6122,8 +6135,16 @@ scan_next_index_lookup_heap (THREAD_ENTRY * thread_p, SCAN_ID * scan_id, INDX_SC
       recdes.data = NULL;
     }
 
+	struct timespec ts_start, ts_end;
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
   sp_scan = heap_get_visible_version (thread_p, isidp->curr_oidp, NULL, &recdes, &isidp->scan_cache, scan_id->fixed,
 				      NULL_CHN);
+
+	clock_gettime (CLOCK_MONOTONIC, &ts_end);
+	thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
   if (sp_scan == S_SNAPSHOT_NOT_SATISFIED)
     {
       if (SCAN_IS_INDEX_COVERED (isidp))
@@ -6289,7 +6310,7 @@ scan_next_index_lookup_heap (THREAD_ENTRY * thread_p, SCAN_ID * scan_id, INDX_SC
 	      if (lock_object (thread_p, isidp->curr_oidp, &isidp->cls_oid, lock, LK_COND_LOCK) == LK_GRANTED)
 		{
 		  /* successfully locked */
-		  lock = NULL_LOCK;
+			lock = NULL_LOCK;
 		}
 	    }
 	}
