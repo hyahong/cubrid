@@ -1595,6 +1595,31 @@ logtb_clear_tdes (THREAD_ENTRY * thread_p, LOG_TDES * tdes)
   LSA_SET_NULL (&tdes->rcv.atomic_sysop_start_lsa);
   LSA_SET_NULL (&tdes->rcv.analysis_last_aborted_sysop_lsa);
   LSA_SET_NULL (&tdes->rcv.analysis_last_aborted_sysop_start_lsa);
+
+  
+ if (!thread_p)
+   return ;
+
+ UINT64 sum = thread_p->statistics.insert + thread_p->statistics.select;
+ printf ("\n" \
+     "transaction end (%d)\n" \
+     "CUBRID : %llu.%llu ms\n" \
+     "RocksDB: %llu.%llu ms\n" \
+     "sum   : %llu.%llu ms\n\n",
+
+     tdes->tran_index,
+
+     thread_p->statistics.insert / 1000000,
+     thread_p->statistics.insert % 1000000,
+
+     thread_p->statistics.select / 1000000,
+     thread_p->statistics.select % 1000000,
+
+     sum / 1000000,
+     sum % 1000000);
+
+ thread_p->statistics.insert = 0;
+ thread_p->statistics.select = 0;
 }
 
 /*

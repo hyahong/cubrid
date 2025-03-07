@@ -298,6 +298,14 @@ namespace cubthread
       int m_qlist_count;
       int read_ovfl_pages_count; // For Vacuum only.
 
+     struct
+     {
+       UINT64 insert;
+       UINT64 select;
+       UINT64 update;
+       UINT64 del;
+     } statistics;
+
       cubload::driver *m_loaddb_driver;
 
       thread_id_t get_id ();
