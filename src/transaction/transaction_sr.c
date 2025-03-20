@@ -104,6 +104,7 @@ xtran_server_commit (THREAD_ENTRY * thread_p, bool retain_lock)
           "%llu.%06llu\n" \
           "%llu.%06llu\n" \
           "%llu.%06llu\n" \
+          "%llu.%06llu\n" \
           "%llu.%06llu\n\n",
     
           tran_index,
@@ -116,6 +117,9 @@ xtran_server_commit (THREAD_ENTRY * thread_p, bool retain_lock)
     
           thread_p->statistics.commit / 1000000,
           thread_p->statistics.commit % 1000000,
+    
+          thread_p->statistics.sect1 / 1000000,
+          thread_p->statistics.sect1 % 1000000,
     
           sum / 1000000,
           sum % 1000000);

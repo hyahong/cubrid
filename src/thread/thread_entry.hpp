@@ -303,6 +303,7 @@ namespace cubthread
            UINT64 insert;
            UINT64 select;
            UINT64 commit;
+           UINT64 sect1;
          } statistics;
 
       cubload::driver *m_loaddb_driver;

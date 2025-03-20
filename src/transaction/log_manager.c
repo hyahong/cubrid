@@ -5416,8 +5416,17 @@ log_commit (THREAD_ENTRY * thread_p, int tran_index, bool retain_lock)
       /*
        * This is a local transaction or is a participant of a distributed transaction
        */
+
+  struct timespec ts_start, ts_end;
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_start);
+
       state = log_commit_local (thread_p, tdes, retain_lock, true);
       state = log_complete (thread_p, tdes, LOG_COMMIT, LOG_NEED_NEWTRID, LOG_ALREADY_WROTE_EOT_LOG);
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_end);
+  thread_p->statistics.sect1 = (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
     }
 
   if (log_No_logging)
