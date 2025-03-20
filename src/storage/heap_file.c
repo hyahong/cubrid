@@ -18998,7 +18998,17 @@ SCAN_CODE
 heap_next (THREAD_ENTRY * thread_p, const HFID * hfid, OID * class_oid, OID * next_oid, RECDES * recdes,
 	   HEAP_SCANCACHE * scan_cache, int ispeeking)
 {
-  return heap_next_internal (thread_p, hfid, class_oid, next_oid, recdes, scan_cache, ispeeking, false, NULL, NULL);
+  struct timespec ts_start, ts_end;
+  SCAN_CODE code;
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_start);
+  
+  code = heap_next_internal (thread_p, hfid, class_oid, next_oid, recdes, scan_cache, ispeeking, false, NULL, NULL);
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_end);
+  thread_p->statistics.select += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
+  return code;
 }
 
 /*
@@ -23028,7 +23038,7 @@ heap_create_update_context (HEAP_OPERATION_CONTEXT * context, HFID * hfid_p, OID
  *         moment.
  */
 int
-heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, PGBUF_WATCHER * home_hint_p)
+heap_insert_logical_internal (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, PGBUF_WATCHER * home_hint_p)
 {
   bool is_mvcc_op;
   int rc = NO_ERROR;
@@ -23232,6 +23242,23 @@ error:
   /* all ok */
   return rc;
 }
+
+int
+heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, PGBUF_WATCHER * home_hint_p)
+{
+  struct timespec ts_start, ts_end;
+  int code;
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_start);
+  
+  code = heap_insert_logical_internal (thread_p, context, home_hint_p);
+  
+  clock_gettime (CLOCK_MONOTONIC, &ts_end);
+  thread_p->statistics.insert += (ts_end.tv_sec - ts_start.tv_sec) * 1000000000LL + (ts_end.tv_nsec - ts_start.tv_nsec);
+
+  return code;
+}
+
 
 /*
  * heap_delete_logical () - Delete an object from heap file
