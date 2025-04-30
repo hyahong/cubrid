@@ -2113,7 +2113,7 @@ fileio_create (THREAD_ENTRY * thread_p, const char *db_full_name_p, const char *
   /* If the file exist make sure that nobody else is using it, before it is truncated */
   if (is_do_lock != false)
     {
-      tmp_vol_desc = fileio_open (vol_label_p, O_RDWR | o_sync, 0);
+      tmp_vol_desc = fileio_open (vol_label_p, O_RDWR | o_sync, 0); // O_DIRECT
       if (tmp_vol_desc != NULL_VOLDES)
 	{
 	  /* The volume (file) already exist. Make sure that nobody is using it before the old one is destroyed */
@@ -2977,7 +2977,7 @@ fileio_mount (THREAD_ENTRY * thread_p, const char *db_full_name_p, const char *v
 
   /* OPEN THE DISK VOLUME PARTITION OR FILE SIMULATED VOLUME */
 start:
-  vol_fd = fileio_open (vol_label_p, O_RDWR | o_sync, 0600);
+  vol_fd = fileio_open (vol_label_p, O_RDWR | O_DIRECT | o_sync, 0600); // O_DIRECT
   if (vol_fd == NULL_VOLDES)
     {
       er_set_with_oserror (ER_ERROR_SEVERITY, ARG_FILE_LINE, ER_IO_MOUNT_FAIL, 1, vol_label_p);
@@ -3835,8 +3835,31 @@ fileio_get_volume_mutex (THREAD_ENTRY * thread_p, int vdes)
  *   offset(in): starting file offset
  */
 static ssize_t
-fileio_os_read (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_p, size_t count, off_t offset)
+fileio_os_read (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_ptr, size_t count, off_t offset)
 {
+  int flags = fcntl(vol_fd, F_GETFL);
+  if (flags < 0)
+    {
+      perror("fcntl(F_GETFL) failed");
+      return -1;
+    }
+  bool direct = (flags & O_DIRECT) != 0;
+
+  void *io_page_p = io_page_ptr;
+  bool used_temp = false;
+
+  if (direct)
+    {
+      const size_t align = 4096;
+      io_page_p = NULL;
+      if (posix_memalign(&io_page_p, align, count) != 0)
+	{
+	  perror("posix_memalign failed");
+	  return -1;
+	}
+      used_temp = true;
+    };
+
 #if !defined (SERVER_MODE)
   /* Locate the desired page */
   if (lseek (vol_fd, offset, SEEK_SET) != offset)
@@ -3883,7 +3906,20 @@ fileio_os_read (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_p, size_t cou
 
   return nbytes;
 #else /* WINDOWS */
-  return pread (vol_fd, io_page_p, count, offset);
+  /* server debugging mode */
+  ssize_t ret = pread (vol_fd, io_page_p, count, offset);
+
+  if (ret > 0 && used_temp)
+    {
+      memcpy (io_page_ptr, io_page_p, ret);
+    }
+
+  if (used_temp)
+    {
+      free (io_page_p);
+    }
+
+  return ret;
 #endif
 }
 
@@ -4036,8 +4072,32 @@ fileio_write_or_add_to_dwb (THREAD_ENTRY * thread_p, int vol_fd, FILEIO_PAGE * i
  *
  */
 static ssize_t
-fileio_os_write (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_p, size_t count, off_t offset)
+fileio_os_write (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_ptr, size_t count, off_t offset)
 {
+  int flags = fcntl(vol_fd, F_GETFL);
+  if (flags < 0)
+    {
+      perror("fcntl(F_GETFL) failed");
+      return -1;
+    }
+  bool direct = (flags & O_DIRECT) != 0;
+
+  void *io_page_p = io_page_ptr;
+  bool used_temp = false;
+
+  if (direct)
+    {
+      const size_t align = 4096;
+      io_page_p = NULL;
+      if (posix_memalign(&io_page_p, align, count) != 0)
+	{
+	  perror("posix_memalign failed");
+	  return -1;
+	}
+      memcpy(io_page_p, io_page_ptr, count);
+      used_temp = true;
+    };
+
 #if !defined (SERVER_MODE)
   if (lseek (vol_fd, offset, SEEK_SET) != offset)
     {
@@ -4082,7 +4142,14 @@ fileio_os_write (THREAD_ENTRY * thread_p, int vol_fd, void *io_page_p, size_t co
   return pwrite (vol_fd, io_page_p, count, offset);
 #else
   /* server debugging mode */
-  return pwrite_with_injected_fault (thread_p, vol_fd, io_page_p, count, offset);
+  ssize_t ret = pwrite_with_injected_fault (thread_p, vol_fd, io_page_p, count, offset);
+
+  if (used_temp)
+    {
+      free (io_page_p);
+    }
+
+  return ret;
 #endif
 }
 
