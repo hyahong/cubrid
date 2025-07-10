@@ -297,6 +297,32 @@ namespace cubthread
   }
 
   void
+  manager::execute_task (entry_task *exec_p)
+  {
+    entry &entry = get_entry ();
+    
+    exec_p->execute (entry);
+    exec_p->retire ();
+
+    er_clear ();
+    entry.end_resource_tracks ();
+    std::memset (&entry.event_stats, 0, sizeof (entry.event_stats));  // clear even stats
+    entry.tran_index = NULL_TRAN_INDEX;    // clear transaction ID
+    entry.private_lru_index = -1;
+    entry.resume_status = THREAD_RESUME_NONE;
+    entry.shutdown = false;
+
+    /* Set clearly for safety.
+     * In fact, it is processed in functions that call xlocator_fetch_all().
+     */
+    entry._unload_parallel_process_idx = NO_UNLOAD_PARALLEL_PROCESSIING;
+    entry._unload_cnt_parallel_process = NO_UNLOAD_PARALLEL_PROCESSIING;
+
+    // transaction index is reset in parent
+    entry.tran_index = LOG_SYSTEM_TRAN_INDEX;
+  }
+
+  void
   manager::push_task_on_core (entry_workpool *worker_pool_arg, entry_task *exec_p, std::size_t core_hash,
 			      bool method_mode = false)
   {

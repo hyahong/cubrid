@@ -1730,6 +1730,12 @@ css_test_for_client_errors (CSS_CONN_ENTRY * conn, unsigned int eid)
 unsigned int
 css_receive_data_from_client (CSS_CONN_ENTRY * conn, unsigned int eid, char **buffer, int *size)
 {
+  int type, status;
+  status = css_read_and_queue (conn, &type);
+  if (status != NO_ERRORS)
+    {
+      return status;
+    }
   return css_receive_data_from_client_with_timeout (conn, eid, buffer, size, -1);
 }
 
@@ -2744,8 +2750,7 @@ css_push_server_task (CSS_CONN_ENTRY &conn_ref)
   //
   conn_ref.add_pending_request ();
 
-  thread_get_manager ()->push_task_on_core (css_Server_request_worker_pool, new css_server_task (conn_ref),
-                                            static_cast<size_t> (conn_ref.idx), conn_ref.in_method);
+  thread_get_manager ()->execute_task (new css_server_task (conn_ref));
 }
 
 void
