@@ -369,31 +369,31 @@ fpcache_claim (THREAD_ENTRY * thread_p, BTID * btid, or_predicate * or_pred, pre
   if (fpcache_Enabled)
     {
       /* Try to find available filter predicate expression in cache. */
-      ATOMIC_INC_64 (&fpcache_Stat_lookup, 1);
+//      ATOMIC_INC_64 (&fpcache_Stat_lookup, 1);
 
       fpcache_entry = fpcache_Hashmap.find (thread_p, *btid);
       if (fpcache_entry == NULL)
 	{
 	  /* Entry not found. */
-	  ATOMIC_INC_64 (&fpcache_Stat_miss, 1);
-	  ATOMIC_INC_64 (&fpcache_Stat_clone_miss, 1);
+//	  ATOMIC_INC_64 (&fpcache_Stat_miss, 1);
+//	  ATOMIC_INC_64 (&fpcache_Stat_clone_miss, 1);
 	}
       else
 	{
 	  /* Hash-table entry found. Try to claim a filter predicate expression, if there is any available. */
-	  ATOMIC_INC_64 (&fpcache_Stat_hit, 1);
+//	  ATOMIC_INC_64 (&fpcache_Stat_hit, 1);
 	  if (fpcache_entry->clone_stack_head >= 0)
 	    {
 	      /* Available filter predicate expression. */
 	      assert (fpcache_entry->clone_stack_head < fpcache_Clone_stack_size);
 	      *filter_pred = fpcache_entry->clone_stack[fpcache_entry->clone_stack_head--];
-	      ATOMIC_INC_64 (&fpcache_Stat_clone_hit, 1);
-	      ATOMIC_INC_32 (&fpcache_Clone_counter, -1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_clone_hit, 1);
+//	      ATOMIC_INC_32 (&fpcache_Clone_counter, -1);
 	    }
 	  else
 	    {
 	      /* No filter predicate expression is available. */
-	      ATOMIC_INC_64 (&fpcache_Stat_clone_miss, 1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_clone_miss, 1);
 	    }
 	  /* Unlock hash-table entry. */
 	  pthread_mutex_unlock (&fpcache_entry->mutex);
@@ -436,7 +436,7 @@ fpcache_retire (THREAD_ENTRY * thread_p, OID * class_oid, BTID * btid, pred_expr
   if (fpcache_Enabled)
     {
       /* Try to retire in cache entry. */
-      ATOMIC_INC_64 (&fpcache_Stat_add, 1);
+//      ATOMIC_INC_64 (&fpcache_Stat_add, 1);
       inserted = fpcache_Hashmap.find_or_insert (thread_p, *btid, fpcache_entry);
       if (fpcache_entry != NULL)
 	{
@@ -445,8 +445,8 @@ fpcache_retire (THREAD_ENTRY * thread_p, OID * class_oid, BTID * btid, pred_expr
 	      /* Newly inserted. We must set class_oid. */
 	      COPY_OID (&fpcache_entry->class_oid, class_oid);
 
-	      ATOMIC_INC_32 (&fpcache_Entry_counter, 1);
-	      ATOMIC_INC_64 (&fpcache_Stat_add, 1);
+//	      ATOMIC_INC_32 (&fpcache_Entry_counter, 1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_add, 1);
 
 	      if (fpcache_Entry_counter >= fpcache_Soft_capacity)
 		{
@@ -465,13 +465,13 @@ fpcache_retire (THREAD_ENTRY * thread_p, OID * class_oid, BTID * btid, pred_expr
 	      /* Can save filter predicate expression. */
 	      fpcache_entry->clone_stack[++fpcache_entry->clone_stack_head] = filter_pred;
 	      filter_pred = NULL;
-	      ATOMIC_INC_64 (&fpcache_Stat_clone_add, 1);
-	      ATOMIC_INC_32 (&fpcache_Clone_counter, 1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_clone_add, 1);
+//	      ATOMIC_INC_32 (&fpcache_Clone_counter, 1);
 	    }
 	  else
 	    {
 	      /* No room for another filter predicate expression. */
-	      ATOMIC_INC_64 (&fpcache_Stat_clone_discard, 1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_clone_discard, 1);
 	    }
 	  gettimeofday (&fpcache_entry->time_last_used, NULL);
 	  pthread_mutex_unlock (&fpcache_entry->mutex);
@@ -568,8 +568,8 @@ fpcache_remove_by_class (THREAD_ENTRY * thread_p, const OID * class_oid)
 	  if (fpcache_Hashmap.erase (thread_p, delete_btids[btid_index]))
 	    {
 	      /* Successfully removed. */
-	      ATOMIC_INC_32 (&fpcache_Entry_counter, -1);
-	      ATOMIC_INC_64 (&fpcache_Stat_discard, 1);
+//	      ATOMIC_INC_32 (&fpcache_Entry_counter, -1);
+//	      ATOMIC_INC_64 (&fpcache_Stat_discard, 1);
 	    }
 	  else
 	    {
@@ -700,16 +700,16 @@ fpcache_cleanup (THREAD_ENTRY * thread_p)
       /* Try delete. */
       if (fpcache_Hashmap.erase (thread_p, candidate.btid))
 	{
-	  ATOMIC_INC_64 (&fpcache_Stat_cleanup_entry, 1);
-	  ATOMIC_INC_64 (&fpcache_Stat_discard, 1);
-	  ATOMIC_INC_32 (&fpcache_Entry_counter, -1);
+//	  ATOMIC_INC_64 (&fpcache_Stat_cleanup_entry, 1);
+//	  ATOMIC_INC_64 (&fpcache_Stat_discard, 1);
+//	  ATOMIC_INC_32 (&fpcache_Entry_counter, -1);
 	}
     }
 
   /* Reset binary heap. */
   fpcache_Cleanup_bh->element_count = 0;
 
-  ATOMIC_INC_64 (&fpcache_Stat_cleanup, 1);
+ // ATOMIC_INC_64 (&fpcache_Stat_cleanup, 1);
   if (!ATOMIC_CAS_32 (&fpcache_Cleanup_flag, 1, 0))
     {
       assert_release (false);
@@ -763,10 +763,10 @@ fpcache_drop_all (THREAD_ENTRY * thread_p)
    * NOTE: If entries/clones are created concurrently to this, the counters may become a little off. However, exact
    *       counters are not mandatory.
    */
-  ATOMIC_INC_64 (&fpcache_Stat_discard, fpcache_Entry_counter);
+  //ATOMIC_INC_64 (&fpcache_Stat_discard, fpcache_Entry_counter);
   fpcache_Entry_counter = 0;
 
-  ATOMIC_INC_64 (&fpcache_Stat_clone_discard, fpcache_Clone_counter);
+  //ATOMIC_INC_64 (&fpcache_Stat_clone_discard, fpcache_Clone_counter);
   fpcache_Clone_counter = 0;
 
   fpcache_Hashmap.clear (thread_p);

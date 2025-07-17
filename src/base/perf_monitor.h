@@ -977,7 +977,7 @@ perfmon_add_at_offset (THREAD_ENTRY * thread_p, int offset, UINT64 amount)
   assert (pstat_Global.initialized);
 
   /* Update global statistic. */
-  ATOMIC_INC_64 (&(pstat_Global.global_stats[offset]), amount);
+//  ATOMIC_INC_64 (&(pstat_Global.global_stats[offset]), amount);
 
 #if defined (SERVER_MODE) || defined (SA_MODE)
   /* Update local statistic */
@@ -1049,7 +1049,7 @@ perfmon_add_at_offset_to_global (int offset, UINT64 amount)
   assert (pstat_Global.initialized);
 
   /* Update global statistic. */
-  ATOMIC_INC_64 (&(pstat_Global.global_stats[offset]), amount);
+//  ATOMIC_INC_64 (&(pstat_Global.global_stats[offset]), amount);
 }
 
 /*
@@ -1097,7 +1097,7 @@ perfmon_set_at_offset (THREAD_ENTRY * thread_p, int offset, int statval, bool al
   assert (pstat_Global.initialized);
 
   /* Update global statistic. */
-  ATOMIC_TAS_64 (&(pstat_Global.global_stats[offset]), statval);
+//  ATOMIC_TAS_64 (&(pstat_Global.global_stats[offset]), statval);
 
 #if defined (SERVER_MODE) || defined (SA_MODE)
   /* Update local statistic */
@@ -1147,7 +1147,7 @@ perfmon_set_at_offset_to_global (int offset, int statval)
   assert (pstat_Global.initialized);
 
   /* Update global statistic. */
-  ATOMIC_TAS_64 (&(pstat_Global.global_stats[offset]), statval);
+//  ATOMIC_TAS_64 (&(pstat_Global.global_stats[offset]), statval);
 }
 
 /*
@@ -1194,6 +1194,7 @@ perfmon_time_at_offset (THREAD_ENTRY * thread_p, int offset, UINT64 timediff)
 
   /* Update global statistics. */
   statvalp = pstat_Global.global_stats + offset;
+  /*
   ATOMIC_INC_64 (PSTAT_COUNTER_TIMER_COUNT_VALUE (statvalp), 1ULL);
   ATOMIC_INC_64 (PSTAT_COUNTER_TIMER_TOTAL_TIME_VALUE (statvalp), timediff);
   do
@@ -1201,11 +1202,11 @@ perfmon_time_at_offset (THREAD_ENTRY * thread_p, int offset, UINT64 timediff)
       max_time = ATOMIC_LOAD_64 (PSTAT_COUNTER_TIMER_MAX_TIME_VALUE (statvalp));
       if (max_time >= timediff)
 	{
-	  /* No need to change max_time. */
 	  break;
 	}
     }
   while (!ATOMIC_CAS_64 (PSTAT_COUNTER_TIMER_MAX_TIME_VALUE (statvalp), max_time, timediff));
+  */
   /* Average is not computed here. */
 
 #if defined (SERVER_MODE) || defined (SA_MODE)
@@ -1282,6 +1283,7 @@ perfmon_time_bulk_at_offset (THREAD_ENTRY * thread_p, int offset, UINT64 timedif
 
   /* Update global statistics. */
   statvalp = pstat_Global.global_stats + offset;
+  /*
   ATOMIC_INC_64 (PSTAT_COUNTER_TIMER_COUNT_VALUE (statvalp), count);
   ATOMIC_INC_64 (PSTAT_COUNTER_TIMER_TOTAL_TIME_VALUE (statvalp), timediff);
   do
@@ -1289,11 +1291,11 @@ perfmon_time_bulk_at_offset (THREAD_ENTRY * thread_p, int offset, UINT64 timedif
       max_time = ATOMIC_LOAD_64 (PSTAT_COUNTER_TIMER_MAX_TIME_VALUE (statvalp));
       if (max_time >= time_per_unit)
 	{
-	  /* No need to change max_time. */
 	  break;
 	}
     }
   while (!ATOMIC_CAS_64 (PSTAT_COUNTER_TIMER_MAX_TIME_VALUE (statvalp), max_time, time_per_unit));
+  */
   /* Average is not computed here. */
 
 #if defined (SERVER_MODE) || defined (SA_MODE)

@@ -1815,7 +1815,7 @@ pgbuf_fix_release (THREAD_ENTRY * thread_p, const VPID * vpid, PAGE_FETCH_MODE f
       return NULL;
     }
 
-  ATOMIC_INC_32 (&pgbuf_Pool.monitor.fix_req_cnt, 1);
+//  ATOMIC_INC_32 (&pgbuf_Pool.monitor.fix_req_cnt, 1);
 
   if (pgbuf_get_check_page_validation_level (PGBUF_DEBUG_PAGE_VALIDATION_FETCH) && fetch_mode != RECOVERY_PAGE)
     {
@@ -6216,7 +6216,7 @@ pgbuf_unlatch_bcb_upon_unfix (THREAD_ENTRY * thread_p, PGBUF_BCB * bufptr, int h
 	}
       else if (pgbuf_is_exist_blocked_reader_writer (bufptr) == false)
 	{
-	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.pg_unfix_cnt, 1);
+//	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.pg_unfix_cnt, 1);
 
 	  if (PGBUF_THREAD_HAS_PRIVATE_LRU (thread_p))
 	    {
@@ -8365,7 +8365,7 @@ pgbuf_get_victim (THREAD_ENTRY * thread_p)
   UINT64 initial_consume_cursor, current_consume_cursor;
   PERF_UTIME_TRACKER perf_tracker = PERF_UTIME_TRACKER_INITIALIZER;
 
-  ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_victim_req_cnt, 1);
+ // ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_victim_req_cnt, 1);
 
   /* how this works:
    * we need to find a victim in one of all lru lists. we have two lru list types: private and shared. private are pages
@@ -14738,12 +14738,12 @@ pgbuf_bcb_update_flags (THREAD_ENTRY * thread_p, PGBUF_BCB * bcb, int set_flags,
   if (old_dirty && !new_dirty)
     {
       /* cleared dirty flag. */
-      ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, -1);
+ //     ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, -1);
     }
   else if (!old_dirty && new_dirty)
     {
       /* added dirty flag */
-      ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, 1);
+  //    ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, 1);
     }
 
   assert (pgbuf_Pool.monitor.dirties_cnt >= 0 && pgbuf_Pool.monitor.dirties_cnt <= pgbuf_Pool.num_buffers);
@@ -14822,7 +14822,7 @@ pgbuf_bcb_change_zone (THREAD_ENTRY * thread_p, PGBUF_BCB * bcb, int new_lru_idx
 
       if (PGBUF_IS_SHARED_LRU_INDEX (PGBUF_GET_LRU_INDEX (old_flags)))
 	{
-	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_shared_pgs_cnt, -1);
+//	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_shared_pgs_cnt, -1);
 	}
 
       switch (PGBUF_GET_ZONE (old_flags))
@@ -14852,7 +14852,7 @@ pgbuf_bcb_change_zone (THREAD_ENTRY * thread_p, PGBUF_BCB * bcb, int new_lru_idx
 
       if (PGBUF_IS_SHARED_LRU_INDEX (PGBUF_GET_LRU_INDEX (new_flags)))
 	{
-	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_shared_pgs_cnt, 1);
+//	  ATOMIC_INC_32 (&pgbuf_Pool.monitor.lru_shared_pgs_cnt, 1);
 	}
 
       switch (new_zone)
@@ -14940,7 +14940,7 @@ pgbuf_bcb_set_dirty (THREAD_ENTRY * thread_p, PGBUF_BCB * bcb)
   while (!ATOMIC_CAS_32 (&bcb->flags, old_flags, old_flags | PGBUF_BCB_DIRTY_FLAG));
 
   /* was changed to dirty */
-  ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, 1);
+ // ATOMIC_INC_64 (&pgbuf_Pool.monitor.dirties_cnt, 1);
   assert (pgbuf_Pool.monitor.dirties_cnt >= 0 && pgbuf_Pool.monitor.dirties_cnt <= pgbuf_Pool.num_buffers);
 
   if (PGBUF_GET_ZONE (old_flags) == PGBUF_LRU_3_ZONE && (old_flags & PGBUF_BCB_INVALID_VICTIM_CANDIDATE_MASK) == 0)

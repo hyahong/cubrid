@@ -178,7 +178,7 @@ namespace cubmem
     MMON_METAINFO *metainfo = (MMON_METAINFO *) get_metainfo_pos (ptr, size);
 
     metainfo->allocated_size = (uint64_t) size;
-    m_total_mem_usage += metainfo->allocated_size;
+//    m_total_mem_usage += metainfo->allocated_size;
 #if (MMON_DEBUG_LEVEL == 1) || (MMON_DEBUG_LEVEL == 3)
     // check total allocated memory peak
     if (m_total_mem_usage.load () > m_total_memory_peak)
@@ -207,7 +207,7 @@ retry:
 	    goto retry;
 	  }
       }
-    m_stat_map[metainfo->stat_id] += metainfo->allocated_size;
+    //m_stat_map[metainfo->stat_id] += metainfo->allocated_size;
 #if (MMON_DEBUG_LEVEL == 1) || (MMON_DEBUG_LEVEL == 3)
     // check stat allocated memory peak
     uint64_t stat_size = m_stat_map[metainfo->stat_id].load ();

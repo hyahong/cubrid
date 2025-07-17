@@ -166,8 +166,8 @@ XCACHE xcache_Global;
 #define xcache_Cleanup_array xcache_Global.cleanup_array
 
 /* Statistics */
-#define XCACHE_STAT_GET(name) ATOMIC_LOAD_64 (&xcache_Global.stats.name)
-#define XCACHE_STAT_INC(name) ATOMIC_INC_64 (&xcache_Global.stats.name, 1)
+#define XCACHE_STAT_GET(name) /*ATOMIC_LOAD_64 (&xcache_Global.stats.name)*/
+#define XCACHE_STAT_INC(name) /*ATOMIC_INC_64 (&xcache_Global.stats.name, 1)*/
 
 #define TIME_DIFF_SEC(t1, t2) (t1.tv_sec - t2.tv_sec)
 
