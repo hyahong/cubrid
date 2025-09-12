@@ -2771,7 +2771,8 @@ xlocator_get_class (THREAD_ENTRY * thread_p, OID * class_oid, int class_chn, con
  */
 int
 xlocator_fetch_all (THREAD_ENTRY * thread_p, const HFID * hfid, LOCK * lock, LC_FETCH_VERSION_TYPE fetch_version_type,
-		    OID * class_oid, int *nobjects, int *nfetched, OID * last_oid, LC_COPYAREA ** fetch_area)
+		    OID * class_oid, int *nobjects, int *nfetched, OID * last_oid, LC_COPYAREA ** fetch_area,
+		    int request_pages)
 {
   LC_COPYAREA_DESC prefetch_des;	/* Descriptor for decache of objects related to transaction isolation level */
   LC_COPYAREA_MANYOBJS *mobjs;	/* Describe multiple objects in area */
@@ -2873,6 +2874,11 @@ xlocator_fetch_all (THREAD_ENTRY * thread_p, const HFID * hfid, LOCK * lock, LC_
 
   /* Assume that the next object can fit in one page */
   copyarea_length = DB_PAGESIZE;
+
+  if (request_pages > 1)
+    {
+      copyarea_length *= request_pages;	/* reset multiple pages size */
+    }
 
   while (true)
     {
@@ -5959,7 +5965,7 @@ locator_update_force (THREAD_ENTRY * thread_p, HFID * hfid, OID * class_oid, OID
 			    "locator_update_force: qexec_clear_list_cache_by_class failed for class { %d %d %d }\n",
 			    class_oid->pageid, class_oid->slotid, class_oid->volid);
 	    }
-	  if (!OID_EQ (&superclass_oid, class_oid))
+	  if (!OID_ISNULL (&superclass_oid) && !OID_EQ (&superclass_oid, class_oid))
 	    {
 	      qmgr_add_modified_class (thread_p, &superclass_oid);
 	    }
@@ -6282,7 +6288,7 @@ locator_delete_force_internal (THREAD_ENTRY * thread_p, HFID * hfid, OID * oid, 
 	      goto error;
 	    }
 
-	  if (!OID_EQ (&superclass_oid, &class_oid))
+	  if (!OID_ISNULL (&superclass_oid) && !OID_EQ (&superclass_oid, &class_oid))
 	    {
 	      qmgr_add_modified_class (thread_p, &superclass_oid);
 	    }

@@ -41,7 +41,7 @@
 #include "authenticate.h"
 #include "schema_manager.h"
 #include "trigger_description.hpp"
-#include "load_object.h"
+#include "unload_object_file.h"
 #include "object_primitive.h"
 #include "parser.h"
 #include "printer.hpp"
@@ -166,6 +166,7 @@ static void emit_partition_info (print_output & output_ctx, MOP clsobj);
 static int emit_stored_procedure_args (print_output & output_ctx, int arg_cnt, DB_SET * arg_set);
 static int emit_stored_procedure (print_output & output_ctx);
 static int emit_foreign_key (print_output & output_ctx, DB_OBJLIST * classes);
+static int extract_classes (extract_context & ctxt, print_output & schema_output_ctx);
 static int create_filename (const char *output_dirname, const char *output_prefix, const char *suffix,
 			    char *output_filename_p, const size_t filename_size);
 /*
@@ -187,8 +188,6 @@ static int create_filename (const char *output_dirname, const char *output_prefi
  * step.
  *
  */
-
-
 /*
  * filter_system_classes - Goes through a class list removing system classes.
  *    return: void
@@ -853,7 +852,7 @@ extract_classes_to_file (extract_context & ctxt, const char *output_filename)
  * Note:
  *    Always output the entire schema.
  */
-int
+static int
 extract_classes (extract_context & ctxt, print_output & schema_output_ctx)
 {
   DB_OBJLIST *classes = NULL;
@@ -1172,7 +1171,12 @@ emit_schema (print_output & output_ctx, DB_OBJLIST * classes, int do_auth, DB_OB
 	{
 	  emit_class_meta (output_ctx, cl->op);
 	}
-      output_ctx ("\n");
+
+      if (do_auth)
+	{
+	  emit_class_owner (output_ctx, cl->op);
+	  output_ctx ("\n");
+	}
     }
 
   output_ctx ("\n");
@@ -1220,16 +1224,6 @@ emit_schema (print_output & output_ctx, DB_OBJLIST * classes, int do_auth, DB_OB
       if (is_partitioned)
 	{
 	  emit_partition_info (output_ctx, cl->op);
-	}
-
-      /*
-       * change_owner method should be called after adding all columns.
-       * If some column has auto_increment attribute, change_owner method
-       * will change serial object's owner related to that attribute.
-       */
-      if (do_auth)
-	{
-	  emit_class_owner (output_ctx, cl->op);
 	}
     }
 
@@ -1933,47 +1927,6 @@ emit_instance_attributes (print_output & output_ctx, DB_OBJECT * class_, const c
 		  continue;
 		}
 
-	      if (db_get_int (&started_val) == 1)
-		{
-		  DB_VALUE diff_val, answer_val;
-
-		  db_make_null (&diff_val);
-		  sr_error = numeric_db_value_sub (&max_val, &cur_val, &diff_val);
-		  if (sr_error == ER_IT_DATA_OVERFLOW)
-		    {
-		      // max - cur might be flooded.
-		      diff_val = max_val;
-		      er_clear ();
-		    }
-		  else if (sr_error != NO_ERROR)
-		    {
-		      pr_clear_value (&sr_name);
-		      continue;
-		    }
-		  sr_error = numeric_db_value_compare (&inc_val, &diff_val, &answer_val);
-		  if (sr_error != NO_ERROR)
-		    {
-		      pr_clear_value (&sr_name);
-		      continue;
-		    }
-		  /* auto_increment is always non-cyclic */
-		  if (db_get_int (&answer_val) > 0)
-		    {
-		      pr_clear_value (&sr_name);
-		      continue;
-		    }
-
-		  sr_error = numeric_db_value_add (&cur_val, &inc_val, &answer_val);
-		  if (sr_error != NO_ERROR)
-		    {
-		      pr_clear_value (&sr_name);
-		      continue;
-		    }
-
-		  pr_clear_value (&cur_val);
-		  cur_val = answer_val;
-		}
-
 	      start_with = numeric_db_value_print (&cur_val, str_buf);
 	      if (start_with[0] == '\0')
 		{
@@ -1983,6 +1936,10 @@ emit_instance_attributes (print_output & output_ctx, DB_OBJECT * class_, const c
 	      output_ctx ("ALTER SERIAL %s%s%s START WITH %s;\n",
 			  PRINT_IDENTIFIER (db_get_string (&sr_name)), start_with);
 
+	      if (db_get_int (&started_val) == 1)
+		{
+		  output_ctx ("SELECT %s%s%s.NEXT_VALUE;\n ", PRINT_IDENTIFIER (db_get_string (&sr_name)));
+		}
 	      pr_clear_value (&sr_name);
 	    }
 	}
@@ -3487,6 +3444,13 @@ create_filename_indexes (const char *output_dirname, const char *output_prefix,
 			 char *output_filename_p, const size_t filename_size)
 {
   return create_filename (output_dirname, output_prefix, INDEX_SUFFIX, output_filename_p, filename_size);
+}
+
+int
+create_filename_log (const char *output_dirname, const char *output_prefix,
+		     char *output_filename_p, const size_t filename_size)
+{
+  return create_filename (output_dirname, output_prefix, "_unloaddb.log", output_filename_p, filename_size);
 }
 
 static int
