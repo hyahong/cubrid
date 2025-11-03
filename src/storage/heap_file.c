@@ -23371,8 +23371,6 @@ heap_insert_logical (THREAD_ENTRY * thread_p, HEAP_OPERATION_CONTEXT * context, 
   CUBRID_OBJ_INSERT_START (&context->class_oid);
 #endif /* ENABLE_SYSTEMTAP */
 
-  assert_release (!heap_is_big_length (context->recdes_p->length));
-
   /*
    * Handle multipage object
    */
