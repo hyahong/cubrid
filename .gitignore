@@ -18,6 +18,7 @@ libedit.pc
 
 ## C files
 # Object files
+.nvim.lua
 *.o
 *.ko
 *.obj
