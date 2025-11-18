@@ -428,7 +428,6 @@ namespace cubconn
 
     pthread_mutex_unlock (&m_entry->tran_index_lock);
 
-
     /* stop the sessions associated with conn */
 
     css_end_server_request (ctx->m_conn);
@@ -441,6 +440,7 @@ namespace cubconn
 
     if (!retry)
       {
+	printf ("[connection_worker::handle_connection_close] interrupt tran_index = %d\n", tran_index);
 	/* interrupt and wake up */
 
 	net_server_wakeup_workers (m_entry, tran_index, client_id);

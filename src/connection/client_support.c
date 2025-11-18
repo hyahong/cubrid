@@ -575,6 +575,7 @@ css_receive_data_from_server (unsigned int eid, char **buffer, int *size)
  *   size(out): size of data buffer that was returned
  *   timeout(in) : timeout in milli-second
  */
+#include <sys/syscall.h>
 unsigned int
 css_receive_data_from_server_with_timeout (unsigned int eid, char **buffer, int *size, int timeout)
 {
@@ -590,6 +591,7 @@ css_receive_data_from_server_with_timeout (unsigned int eid, char **buffer, int 
 
   rid = CSS_RID_FROM_EID (eid);
   css_Errno = css_receive_data (entry->conn, rid, buffer, size, timeout);
+  printf ("[%ld:css_receive_data_from_server_with_timeout] css_Errno = %d\n", syscall (SYS_gettid), css_Errno);
   if (css_Errno == NO_ERRORS || css_Errno == SERVER_ABORTED)
     {
       css_test_for_server_errors (entry, eid);

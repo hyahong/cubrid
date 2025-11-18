@@ -367,6 +367,7 @@ css_net_send_no_block (SOCKET fd, const char *buffer, int size)
  *   nbytes(in): count of bytes will be read
  *   timeout(in): timeout in milli-second
  */
+#include <sys/syscall.h>
 int
 css_readn (SOCKET fd, char *ptr, int nbytes, int timeout)
 {
@@ -423,6 +424,32 @@ css_readn (SOCKET fd, char *ptr, int nbytes, int timeout)
 	{
 	  if (po[0].revents & POLLERR || po[0].revents & POLLHUP)
 	    {
+	      if (po[0].revents & POLLERR)
+		{
+		  int error = 0;
+		  socklen_t len = sizeof (error);
+
+		  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+		    {
+		      printf ("[%ld:css_readn] getsockopt failed: %s\n", syscall (SYS_gettid), strerror (errno));
+		    }
+		  else
+		    {
+		      if (error != 0)
+			{
+			  printf ("[%ld:css_readn] error: %s\n", syscall (SYS_gettid), strerror (error));
+			}
+		      else
+			{
+			  printf ("[%ld:css_readn] error but SO_ERROR is 0\n", syscall (SYS_gettid));
+			}
+		    }
+		}
+	      else
+		{
+		  printf ("[%ld:css_readn] POLLHUP\n", syscall (SYS_gettid));
+		}
+
 	      errno = EINVAL;
 	      er_log_debug (ARG_FILE_LINE, "css_readn: %s %s", (po[0].revents & POLLERR ? "POLLERR" : "POLLHUP"),
 			    strerror (errno));

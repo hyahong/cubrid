@@ -1853,6 +1853,7 @@ css_send_reply_and_3_data_to_client (CSS_CONN_ENTRY * conn, unsigned int eid, ch
  * Note: This is to be used ONLY by the server to return error data to the
  *       client.
  */
+#include <sys/syscall.h>
 unsigned int
 css_send_error_to_client (CSS_CONN_ENTRY * conn, unsigned int eid, char *buffer, int buffer_size)
 {
@@ -1887,6 +1888,7 @@ css_send_error_to_client (CSS_CONN_ENTRY * conn, unsigned int eid, char *buffer,
       /* reply */
       mem_reply = new std::byte[buffer_size];
       std::memcpy (mem_reply, buffer, buffer_size);
+      printf ("[%ld:css_send_error_to_client] buffer_size = %d\n", syscall (SYS_gettid), buffer_size);
     }
   request.packet.emplace_back (mem_reply, (std::size_t) buffer_size);
 
@@ -1901,6 +1903,7 @@ css_send_error_to_client (CSS_CONN_ENTRY * conn, unsigned int eid, char *buffer,
   };
   // *INDENT-ON*
 
+  printf ("[%ld:css_send_error_to_client]: ERROR\n", syscall (SYS_gettid));
   return css_enqueue_and_notify (cubconn::connection_worker::queue_type::IMMEDIATE, std::move (request));
 }
 

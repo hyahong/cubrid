@@ -447,6 +447,7 @@ css_queue_unexpected_error_packet (CSS_CONN_ENTRY * conn, unsigned short request
  *
  * Note: The data packet will then be queued.
  */
+#include <sys/syscall.h>
 static void
 css_queue_error_packet (CSS_CONN_ENTRY * conn, unsigned short request_id, NET_HEADER * header)
 {
@@ -462,6 +463,7 @@ css_queue_error_packet (CSS_CONN_ENTRY * conn, unsigned short request_id, NET_HE
 	{
 	  free_and_init (buffer);
 	}
+      printf ("[%ld:css_queue_error_packet]\n", syscall (SYS_gettid));
     }
   else
     {
@@ -558,6 +560,7 @@ css_queue_unexpected_packet (int type, CSS_CONN_ENTRY * conn, unsigned short req
   conn->in_method = flags & NET_HEADER_FLAG_METHOD_MODE ? true : false;
   conn->db_error = (int) ntohl (header->db_error);
 
+  printf ("[%ld:css_queue_unexpected_packel]\n", syscall (SYS_gettid));
   switch (type)
     {
     case CLOSE_TYPE:

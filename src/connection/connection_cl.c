@@ -488,6 +488,7 @@ css_receive_request (CSS_CONN_ENTRY * conn, unsigned short *rid, int *request, i
  *
  * Note: this is a blocking read.
  */
+#include <sys/syscall.h>
 int
 css_receive_data (CSS_CONN_ENTRY * conn, unsigned short req_id, char **buffer, int *buffer_size, int timeout)
 {
@@ -596,6 +597,7 @@ begin:
 #endif /* CS_MODE */
   else
     {
+      printf ("[%ld:css_receive_data] type != DATA_TYPE && type != ABORT_TYPE\n", syscall (SYS_gettid));
       css_queue_unexpected_packet (type, conn, rid, &header, ntohl (header.buffer_size));
       goto begin;
     }
@@ -1381,10 +1383,12 @@ css_return_queued_error (CSS_CONN_ENTRY * conn, unsigned short request_id, char 
 
   if (error_q_entry_p == NULL)
     {
+      printf ("[%ld:css_return_queued_error] empty\n", syscall (SYS_gettid));
       /* empty queue */
       return 0;
     }
 
+  printf ("[%ld:css_return_queued_error] found\n", syscall (SYS_gettid));
   *buffer = error_q_entry_p->buffer;
   *buffer_size = error_q_entry_p->size;
   *rc = error_q_entry_p->db_error;
