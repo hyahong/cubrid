@@ -272,6 +272,7 @@ namespace cubconn::master
       {
 	er_log_conn (__FILE__, __LINE__, "memory allocation failed: %s", strerror (errno));
 	assert_release (false);
+	return nullptr;
       }
     ctx->reset ();
 
@@ -792,6 +793,11 @@ namespace cubconn::master
 
     /* make new context and conn */
     new_ctx = make_context ();
+    if (!new_ctx)
+      {
+	NEXT_STATE (ctx, RecvRequestType);
+	return result::RefuseConnection;
+      }
 
     /* check */
     if (prm_get_bool_value (PRM_ID_ACCESS_IP_CONTROL) == true && css_check_accessibility (new_fd) != NO_ERROR)
